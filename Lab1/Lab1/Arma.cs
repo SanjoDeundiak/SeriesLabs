@@ -96,6 +96,8 @@ namespace Lab1
 
         public void generateOutput(bool estimation)
         {
+            NormalDistribution d = new NormalDistribution();
+
             double[] array = new double[n];
             double[] a, b;
 
@@ -125,6 +127,9 @@ namespace Lab1
                     res += b[j] * inputValue(i - j);
                 }
 
+                if (!estimation)
+                    res += d.Next();
+
                 array[i] = res;
             }
         }
@@ -139,10 +144,9 @@ namespace Lab1
             }
         }
 
-        public void printResult(string filename)
+        public string resultString()
         {
-            string res = result.ToMatrixString();
-            System.IO.File.WriteAllText(filename, res);
+            return n.ToString() + " " + result.ToMatrixString();
         }
 
         public double S()
@@ -153,7 +157,7 @@ namespace Lab1
                 res += Math.Pow(estimations[i] - y[i], 2);
             }
 
-            return res;
+            return res / n;
         }
 
         public double R2()

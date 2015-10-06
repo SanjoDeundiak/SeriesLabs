@@ -18,6 +18,8 @@ namespace Lab1
             double[] realCoefB = new double[] { 1.0, 0.01 };
 
             System.IO.StreamWriter file = new System.IO.StreamWriter("analysis.txt");
+            System.IO.StreamWriter file2 = new System.IO.StreamWriter("result.txt");
+
             for (int size = 10; size <= 100; size += 5)
             {
                 for (int i = 3; i <= realCoefA.Length - 1; i++)
@@ -36,9 +38,10 @@ namespace Lab1
                         arma.setCoefficients(coefA, coefB);
                         arma.setSize(size);
                         arma.loadData("v.txt", false);
-                        arma.generateOutput(false);
+                        arma.loadData("y.txt", true);
+                        //arma.generateOutput(false);
                         arma.calculateMNK();
-                        arma.printResult("result.txt");
+                        file2.WriteLine(size.ToString() + " " + arma.resultString());
                         arma.generateOutput(true);
                         string res = arma.ToString();
                         file.WriteLine(res);
@@ -46,6 +49,7 @@ namespace Lab1
                 }
             }
             file.Close();
+            file2.Close();
         }
     }
 }
