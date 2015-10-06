@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
+
 namespace Lab1
 {
     class Arma
@@ -12,11 +15,13 @@ namespace Lab1
         private int ard, mad;
         private double[] a, b;
         private double[] v, y;
+
+        private Matrix<double> result;
         public Arma()
         {
 
         }
-
+        public void setSize(int n) { this.n = n; }
         public void setDimensions(int ard, int mad) { this.ard = ard;  this.mad = mad; }
         public void setCoefficients(double[] a, double[] b)
         {
@@ -68,7 +73,7 @@ namespace Lab1
             return i >= 0 ? y[i] : 0;
         }
 
-        private void generateInput()
+        public void generateInput()
         {
             NormalDistribution d = new NormalDistribution();
             v = new double[n];
@@ -77,25 +82,84 @@ namespace Lab1
                 v[i] = d.Next();
         }
 
-        private void generateOutput()
+        public void generateOutput()
         {
             y = new double[n];
 
             for (int i = 0; i < n; i++)
             {
                 double res = 0;
-                for (int j = 0; j < ard; j++)
+                for (int j = 0; j <= ard; j++)
                 {
                     res += j == 0 ? a[j] : a[j] * outputValue(i - j);
                 }
 
-                for (int j = 0; j < mad; j++)
+                for (int j = 0; j <= mad; j++)
                 {
                     res += b[j] * inputValue(i - j);
                 }
 
                 y[i] = res;
             }
+        }
+
+        public void printData(string filename, bool output)
+        {
+            double[] array = output ? y : v;
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
+            {
+                for (int i = 0; i < n; i++)
+                    file.WriteLine(array[i]);
+            }
+        }
+
+        public void printResult(string filename)
+        {
+            string res = result.ToMatrixString();
+            System.IO.File.WriteAllText(filename, res);
+        }
+
+        public void calculateMNK()
+        {
+            int maxDim = Math.Max(ard, mad);
+            int size = n - 1 - maxDim;
+            Matrix<double> X = DenseMatrix.Create(size, 1, 1.0);
+
+            Matrix<double> yPart = DenseMatrix.Create(size, ard, 0);
+            for (int i = 0; i < size; i++)
+            {
+                Vector<double> row = DenseVector.Create(ard, 0.0);
+                for (int j = 0; j < ard; j++)
+                {
+                    row[j] = outputValue(i + maxDim - j - 1);
+                }
+                yPart.SetRow(i, row);
+            }
+            X = X.Append(yPart);
+
+            Matrix<double> vPart = DenseMatrix.Create(size, mad + 1, 0);
+            for (int i = 0; i < size; i++)
+            {
+                Vector<double> row = DenseVector.Create(mad + 1, 0.0);
+                for (int j = 0; j < mad + 1; j++)
+                {
+                    row[j] = inputValue(i + maxDim - j);
+                }
+                vPart.SetRow(i, row);
+            }
+            X = X.Append(vPart);
+
+            double[] yCopy = new double[size];
+            Array.Copy(y, maxDim, yCopy, 0, size);
+            Matrix<double> Y = DenseMatrix.OfColumnVectors(DenseVector.OfArray(yCopy));
+
+            Matrix<double> c1 = X.Transpose();
+            Matrix<double> c2 = c1 * X;
+            Matrix<double> c3 = c2.Inverse();
+            Matrix<double> c4 = c3 * c1;
+            Matrix<double> c5 = c4 * Y;
+
+            result = (X.Transpose() * X).Inverse()*X.Transpose()*Y;
         }
     }
 }
