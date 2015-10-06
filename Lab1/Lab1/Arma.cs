@@ -17,6 +17,20 @@ namespace Lab1
         private double[] v, y;
 
         private Matrix<double> result;
+
+        private double[] aEstimation;
+        private double[] bEstimation;
+
+        public override string ToString()
+        {
+            string res = "";
+
+            res += "n = " + n.ToString() + ", ard = " + ard.ToString() + ", mad = " + mad.ToString() + ", S = " + S().ToString() + ", R2 = " + R2().ToString() + ", IKA = " + IKA().ToString();
+
+            return res;
+        }
+
+        private double[] estimations;
         public Arma()
         {
 
@@ -35,10 +49,8 @@ namespace Lab1
         public void loadData(string filename, bool output)
         {
             string[] lines = System.IO.File.ReadAllLines(filename);
-            if (n != 0 && lines.Length != n)
-                throw new Exception("wrong data in " + filename);
 
-            n = lines.Length;
+            n = n == 0 ? lines.Length : n;
 
             double[] array = new double[n];
 
@@ -55,7 +67,7 @@ namespace Lab1
         {
             this.n = n;
             generateInput();
-            generateOutput();
+            generateOutput(false);
         }
 
         public double inputValue(int i)
@@ -65,12 +77,12 @@ namespace Lab1
 
             return i >= 0 ? v[i] : 0;
         }
-        public double outputValue(int i)
+        public double outputValue(int i, bool estimation)
         {
             if (i >= n)
                 throw new Exception("out of range");
 
-            return i >= 0 ? y[i] : 0;
+            return i >= 0 ? (estimation ? estimations[i] : y[i]) : 0;
         }
 
         public void generateInput()
@@ -82,16 +94,30 @@ namespace Lab1
                 v[i] = d.Next();
         }
 
-        public void generateOutput()
+        public void generateOutput(bool estimation)
         {
-            y = new double[n];
+            double[] array = new double[n];
+            double[] a, b;
+
+            if (estimation)
+            {
+                estimations = array;
+                a = aEstimation;
+                b = bEstimation;
+            }
+            else
+            {
+                y = array;
+                a = this.a;
+                b = this.b;
+            }
 
             for (int i = 0; i < n; i++)
             {
                 double res = 0;
                 for (int j = 0; j <= ard; j++)
                 {
-                    res += j == 0 ? a[j] : a[j] * outputValue(i - j);
+                    res += j == 0 ? a[j] : a[j] * outputValue(i - j, estimation);
                 }
 
                 for (int j = 0; j <= mad; j++)
@@ -99,7 +125,7 @@ namespace Lab1
                     res += b[j] * inputValue(i - j);
                 }
 
-                y[i] = res;
+                array[i] = res;
             }
         }
 
@@ -119,6 +145,27 @@ namespace Lab1
             System.IO.File.WriteAllText(filename, res);
         }
 
+        public double S()
+        {
+            double res = 0;
+            for (int i = 0; i < n; i++)
+            {
+                res += Math.Pow(estimations[i] - y[i], 2);
+            }
+
+            return res;
+        }
+
+        public double R2()
+        {
+            return 0;
+        }
+
+        public double IKA()
+        {
+            return 0;
+        }
+
         public void calculateMNK()
         {
             int maxDim = Math.Max(ard, mad);
@@ -131,7 +178,7 @@ namespace Lab1
                 Vector<double> row = DenseVector.Create(ard, 0.0);
                 for (int j = 0; j < ard; j++)
                 {
-                    row[j] = outputValue(i + maxDim - j - 1);
+                    row[j] = outputValue(i + maxDim - j - 1, false);
                 }
                 yPart.SetRow(i, row);
             }
@@ -155,11 +202,23 @@ namespace Lab1
 
             Matrix<double> c1 = X.Transpose();
             Matrix<double> c2 = c1 * X;
+
+            if (Math.Abs(c2.Determinant()) <= 1E-6)
+                throw new Exception("Determinant == 0");
+
             Matrix<double> c3 = c2.Inverse();
             Matrix<double> c4 = c3 * c1;
             Matrix<double> c5 = c4 * Y;
 
             result = (X.Transpose() * X).Inverse()*X.Transpose()*Y;
+
+            aEstimation = new double[ard + 1];
+            for (int i = 0; i < ard + 1; i++)
+                aEstimation[i] = result[i, 0];
+
+            bEstimation = new double[mad + 1];
+            for (int i = 0; i < mad + 1; i++)
+                bEstimation[i] = result[i + ard + 1, 0];
         }
     }
 }
