@@ -50,9 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arma.cs" />
+    <Compile Include="MNK.cs" />
     <Compile Include="NormalDistribution.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RMNK.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
